@@ -1,4 +1,4 @@
-"""Edit the settings below, then run: python main.py"""
+"""Ändra inställningarna nedan och kör: python demo_main.py."""
 
 from pathlib import Path
 
@@ -12,23 +12,23 @@ from utilities.plot import plot_loss
 ROOT = Path(__file__).resolve().parent
 
 # Settings
-# Våra färdiggenererade kylbilder, med samma produktnamn som ViT.
-DATA = ROOT / "data/products_synthetic_demo/dataset.yaml"
+# YOLO hittar produkter. ViT får sedan bestämma produktnamnen.
+DATA = ROOT / "data/products_detection_demo/dataset.yaml"
 WEIGHTS = ROOT / "models/pretrained/yolo11n.pt"
-OUTPUT = ROOT / "models/yolo11n-products-demo"  # Ny mapp för varje träningskörning.
+OUTPUT = ROOT / "models/yolo11n-detection-demo"  # Ny mapp för varje träningskörning.
 DEVICE = "auto"
 SEED = 42
 EPOCHS = 5
-BATCH_SIZE = 2
+BATCH_SIZE = 16
 IMAGE_SIZE = 512
-WORKERS = 2
+WORKERS = 4
 OPTIMIZER = "AdamW"
-LEARNING_RATE = 0.0003
+LEARNING_RATE = 0.001
 FINAL_LR_FRACTION = 0.1
-WEIGHT_DECAY = 0.001
+WEIGHT_DECAY = 0.0005
 WARMUP_EPOCHS = 1
 PATIENCE = 6
-FREEZE_LAYERS = 10
+FREEZE_LAYERS = 0
 AMP = True
 
 # Bilderna är färdiga. Gör ingen extra augmentering när de läses in.
@@ -46,7 +46,7 @@ class ProductTrainer(DetectionTrainer):
 
 
 def train():
-    """Träna YOLO11n på produktnamnen i det syntetiska datasetet."""
+    """Träna YOLO11n på en enda klass: product."""
     if not DATA.is_file():
         raise ValueError(f"Missing detection dataset YAML: {DATA}")
     model = YOLO(str(WEIGHTS))
@@ -75,7 +75,6 @@ def train():
         warmup_bias_lr=LEARNING_RATE,
         patience=PATIENCE,
         freeze=FREEZE_LAYERS,
-        single_cls=False,
         seed=SEED,
         amp=AMP,
         val=True,

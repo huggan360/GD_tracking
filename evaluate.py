@@ -10,14 +10,14 @@ from utilities.files import write_json
 ROOT = Path(__file__).resolve().parent
 
 # Settings
-DATA = ROOT / "data/products_synthetic_demo/dataset.yaml"
-CHECKPOINT = ROOT / "models/yolo11n-products-demo/train/weights/best.pt"
-OUTPUT = ROOT / "models/yolo11n-products-demo"
+DATA = ROOT / "data/products_detection_demo/dataset.yaml"
+CHECKPOINT = ROOT / "models/yolo11n-detection-demo/train/weights/best.pt"
+OUTPUT = ROOT / "models/yolo11n-detection-demo"
 SPLIT = "val"  # Syntetisk validering, inte nya verkliga produktfoton.
 DEVICE = "auto"
-BATCH_SIZE = 2
+BATCH_SIZE = 16
 IMAGE_SIZE = 512
-WORKERS = 2
+WORKERS = 4
 
 
 # Load model and evaluate

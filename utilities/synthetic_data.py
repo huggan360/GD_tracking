@@ -143,12 +143,13 @@ def save_preview(output, records):
     for row_number, variants in enumerate(records):
         for column, record in enumerate(variants):
             image = Image.open(output / record["image"]).convert("RGB")
-            box = tuple(int(record[key]) for key in ("xmin", "ymin", "xmax", "ymax"))
-            ImageDraw.Draw(image).rectangle(box, outline="#00ff40", width=3)
+            if record["xmin"] != "":
+                box = tuple(int(record[key]) for key in ("xmin", "ymin", "xmax", "ymax"))
+                ImageDraw.Draw(image).rectangle(box, outline="#00ff40", width=3)
             image.thumbnail((216, 260))
             canvas.paste(image, (column * 220 + (220 - image.width) // 2, row_number * 300 + 36))
             draw.text((column * 220 + 4, row_number * 300 + 3), record["product_name"][:28], fill="black")
-            draw.text((column * 220 + 4, row_number * 300 + 18), record["variant"], fill="black")
+            draw.text((column * 220 + 4, row_number * 300 + 18), f"{record['split']} / {record['variant']}", fill="black")
     canvas.save(output / "preview.jpg", quality=92)
 
 
