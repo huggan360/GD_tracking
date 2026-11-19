@@ -6,19 +6,20 @@ from ultralytics import YOLO
 from ultralytics.models.yolo.detect import DetectionTrainer
 
 from utilities.devices import choose_device
-from utilities.files import new_run_folder, write_json
+from utilities.files import new_run_folder
+from utilities.plot import plot_loss
 
 ROOT = Path(__file__).resolve().parent
 
 # Settings
-# Use real scene boxes for fridge localization, or catalogue boxes for demos.
-DATA = ROOT / "data/dataset.yaml"
-WEIGHTS = ROOT / "models/pretrained/yolo26m.pt"
-OUTPUT = ROOT / "models/grocery-v1"  # Use a new folder per run.
+# Våra färdiggenererade kylbilder, med samma produktnamn som ViT.
+DATA = ROOT / "data/products_synthetic/dataset.yaml"
+WEIGHTS = ROOT / "models/pretrained/yolo11n.pt"
+OUTPUT = ROOT / "models/yolo11n-products-v1"  # Ny mapp för varje träningskörning.
 DEVICE = "auto"
 SEED = 42
 EPOCHS = 25
-BATCH_SIZE = 8
+BATCH_SIZE = 2
 IMAGE_SIZE = 640
 WORKERS = 2
 OPTIMIZER = "AdamW"
@@ -30,45 +31,32 @@ PATIENCE = 6
 FREEZE_LAYERS = 10
 AMP = True
 
-# Data augmentation
-# YOLO updates the product boxes together with each image transformation.
-AUGMENTATION = True
-ROTATION_DEGREES = 10
-TRANSLATION = 0.1
-SCALE = 0.2
-HORIZONTAL_FLIP = 0.5
-HUE = 0.015
-SATURATION = 0.4
-BRIGHTNESS = 0.3
-MOSAIC = 0.0
-MIXUP = 0.0
-
-
-# Optional training without augmentation
-class NoAugmentationTrainer(DetectionTrainer):
-    """Turn off the entire augmentation pipeline, including Albumentations."""
-
+# Bilderna är färdiga. Gör ingen extra augmentering när de läses in.
+class ProductTrainer(DetectionTrainer):
     def build_dataset(self, img_path, mode="train", batch=None):
         dataset = super().build_dataset(img_path, mode, batch)
         dataset.augment = False
         dataset.transforms = dataset.build_transforms(self.args)
-        if mode == "train":
-            write_json(self.save_dir / "augmentation_policy.json", { "augmentation": False, "transforms": str(dataset.transforms), },)
         return dataset
+
+    # Spara loss-kurvan när epokens tränings- och valideringsvärden är klara.
+    def save_metrics(self, metrics):
+        super().save_metrics(metrics)
+        plot_loss(self.csv, self.save_dir / "loss.png")
 
 
 def train():
-    """Train one product box class; ViT supplies the grocery category."""
+    """Träna YOLO11n på produktnamnen i det syntetiska datasetet."""
     if not DATA.is_file():
         raise ValueError(f"Missing detection dataset YAML: {DATA}")
     model = YOLO(str(WEIGHTS))
     if model.task != "detect":
-        raise ValueError("Use detection weights such as yolo26m.pt.")
+        raise ValueError("Använd en detektionsmodell, exempelvis yolo11n.pt.")
     output = new_run_folder(OUTPUT)
 
     # Training loop (Ultralytics)
     model.train(
-        trainer=DetectionTrainer if AUGMENTATION else NoAugmentationTrainer,
+        trainer=ProductTrainer,
         data=str(DATA),
         project=str(output),
         name="train",
@@ -87,19 +75,11 @@ def train():
         warmup_bias_lr=LEARNING_RATE,
         patience=PATIENCE,
         freeze=FREEZE_LAYERS,
-        single_cls=True,
+        single_cls=False,
         seed=SEED,
         amp=AMP,
-        degrees=ROTATION_DEGREES,
-        translate=TRANSLATION,
-        scale=SCALE,
-        fliplr=HORIZONTAL_FLIP,
-        flipud=0.0,
-        hsv_h=HUE,
-        hsv_s=SATURATION,
-        hsv_v=BRIGHTNESS,
-        mosaic=MOSAIC,
-        mixup=MIXUP,
+        val=True,
+        plots=False,
     )
     return Path(model.trainer.best)
 

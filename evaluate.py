@@ -10,13 +10,13 @@ from utilities.files import write_json
 ROOT = Path(__file__).resolve().parent
 
 # Settings
-DATA = ROOT / "data/dataset.yaml"
-CHECKPOINT = ROOT / "models/grocery-v1/train/weights/best.pt"
-OUTPUT = ROOT / "models/grocery-v1"
-SPLIT = "test"  # "val" or "test"
+DATA = ROOT / "data/products_synthetic_demo/dataset.yaml"
+CHECKPOINT = ROOT / "models/yolo11n-products-demo/train/weights/best.pt"
+OUTPUT = ROOT / "models/yolo11n-products-demo"
+SPLIT = "val"  # Syntetisk validering, inte nya verkliga produktfoton.
 DEVICE = "auto"
-BATCH_SIZE = 8
-IMAGE_SIZE = 640
+BATCH_SIZE = 2
+IMAGE_SIZE = 512
 WORKERS = 2
 
 
@@ -25,7 +25,7 @@ def evaluate():
     if not CHECKPOINT.is_file():
         raise ValueError(f"Missing trained detector: {CHECKPOINT}")
     model = YOLO(str(CHECKPOINT))
-    metrics = model.val(data=str(DATA), split=SPLIT, single_cls=True, imgsz=IMAGE_SIZE, batch=BATCH_SIZE, workers=WORKERS, device=str(choose_device(DEVICE)), project=str(OUTPUT), name=f"evaluation_{SPLIT}",)
+    metrics = model.val(data=str(DATA), split=SPLIT, single_cls=False, imgsz=IMAGE_SIZE, batch=BATCH_SIZE, workers=WORKERS, device=str(choose_device(DEVICE)), project=str(OUTPUT), name=f"evaluation_{SPLIT}",)
     result = {key: float(value) for key, value in metrics.results_dict.items()}
     write_json(OUTPUT / f"evaluation_{SPLIT}.json", result)
     return result

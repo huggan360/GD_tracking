@@ -1,14 +1,12 @@
-"""Edit these paths, then run: python compile/hailo.py."""
-import sys
+"""Kör separat efter träningen, i en miljö med Hailo Dataflow Compiler."""
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from hailo.compile_model import compile_model
+from ultralytics import YOLO
 
 ROOT = Path(__file__).resolve().parents[1]
-WEIGHTS = ROOT / "models/pi-demo/best.pt"
-CALIBRATION = ROOT / "data/calibration"
-OUTPUT = ROOT / "models/pi-demo/hailo"
+WEIGHTS = ROOT / "models/yolo11n-products-demo/train/weights/best.pt"
+DATA = ROOT / "data/products_synthetic_demo/dataset.yaml"
 
 if __name__ == "__main__":
-    print(compile_model(WEIGHTS, CALIBRATION, OUTPUT))
+    # Ultralytics väljer YOLO11:s utgångar och sparar även metadata.yaml med klassnamnen.
+    print(YOLO(str(WEIGHTS)).export(format="hailo", name="hailo8", data=str(DATA), imgsz=512))
